@@ -20,7 +20,6 @@ infinite = 999999
 walking_time_filename = '../data/CampusMatrix - Walking Time.csv' # time in seconds
 shuttle_time_filename = '../data/CampusMatrix - Shuttle.csv' # time in seconds
 outdoorness_filename = '../data/CampusMatrix - Outdoorness.csv' # binary: 0 is indoor, 1 is outdoor
-<<<<<<< HEAD
 shuttle_connection_time_filename = '../data/CampusMatrix - Shuttle-Connection.csv' # time in seconds. This separate matrix allows us to add a penalty when the user take the shuttle
     
 def read_node_labels(filename):
@@ -42,18 +41,6 @@ def convert_list_to_dict(my_list):
     my_dict = dict(zip(list2, my_list))
     return my_dict
 
-=======
-    
-def read_node_labels():
-    '''
-    Read node labels from files
-    '''
-    fd = open(walking_time_filename,'r')
-    node_labels = fd.readline().split(',')[1:]
-    fd.close()
-    return node_labels
-
->>>>>>> 7df1f560e0ca1efee0194715ca37bfdea22f0091
 def delete_first_row_and_column(array):
     '''
     Delete the first row and the first column of a numpy array
@@ -72,7 +59,6 @@ def replace_nan_to_infinite(array2D):
     return array2D
         
         
-<<<<<<< HEAD
 def read_weights_from_file(filename):
     '''
     Read distances (e.g. edge weights) from file
@@ -87,33 +73,12 @@ def compute_shortest_path(graph, target_node, source_node):
     '''
     print(nx.dijkstra_path(graph,source=source_node,target=target_node))
     print(nx.dijkstra_path_length(graph,source=source_node,target=target_node))
-=======
-def read_shuttle_data():
-    '''
-    Read distances (e.g. edge weights) from file
-    '''
-    shuttle_time_data = np.genfromtxt(shuttle_time_filename, delimiter=',')
-    shuttle_times = replace_nan_to_infinite(delete_first_row_and_column(shuttle_time_data))    
-    return shuttle_times
-
-def read_distance_data():
-    '''
-    Read distances (e.g. edge weights) from file
-    '''
-    # Read distance data
-    walking_time_data = np.genfromtxt(walking_time_filename, delimiter=',')
-    walking_times = replace_nan_to_infinite(delete_first_row_and_column(walking_time_data))    
-    
-    
-    return walking_times
->>>>>>> 7df1f560e0ca1efee0194715ca37bfdea22f0091
 
 def main():
     '''
     This is the main function
     http://networkx.lanl.gov/reference/algorithms.operators.html
     '''    
-<<<<<<< HEAD
     walking_times = read_weights_from_file(walking_time_filename)  
     shuttle_times = read_weights_from_file(shuttle_time_filename)
     shuttle_connection_times = read_weights_from_file(shuttle_connection_time_filename)
@@ -141,36 +106,6 @@ def main():
     # Compute the shortest paths and path lengths between nodes in the graph.
     # http://networkx.lanl.gov/reference/algorithms.shortest_paths.html
     compute_shortest_path(main_graph, '32', 'NW86')
-=======
-    node_labels = read_node_labels()
-    walking_times = read_distance_data()  
-    shuttle_times = read_shuttle_data() 
-    
-    #print walking_times
-    G = nx.DiGraph(data=walking_times)
-    print G.edges(data=True)
-    shuttle_graph = nx.DiGraph(data=shuttle_times)
-    print shuttle_graph.edges(data=True)
-    
-    # TODO: add edge name somehow
-    #print nx.union(G, shuttle_graph)
-    
-    # Compute the shortest paths and path lengths between nodes in the graph.
-    # http://networkx.lanl.gov/reference/algorithms.shortest_paths.html
-    print(nx.dijkstra_path(G,source=0,target=30))
-    print(nx.dijkstra_path_length(G,source=0,target=30))
-    print(nx.dijkstra_path(G,source=node_labels.index('NW86'),target=node_labels.index('32')))
-    print(nx.dijkstra_path_length(G,source=node_labels.index('NW86'),target=node_labels.index('32')))
-    
-    print(nx.dijkstra_path(G,source=node_labels.index('1'),target=node_labels.index('76')))
-    print(nx.dijkstra_path_length(G,source=node_labels.index('1'),target=node_labels.index('76')))
-    
-    print(display_path_labels(node_labels, nx.dijkstra_path(G,source=node_labels.index('1'),target=node_labels.index('76'))))
-    print(display_path_labels(node_labels, nx.dijkstra_path(G,source=node_labels.index('NW12'),target=node_labels.index('NW86'))))
-    print(nx.dijkstra_path(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
-    print(nx.dijkstra_path_length(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
-    
->>>>>>> 7df1f560e0ca1efee0194715ca37bfdea22f0091
     
 
 def display_path_labels(node_labels, path):
@@ -193,7 +128,6 @@ if __name__ == "__main__":
     A=np.matrix([[1,99],[1,1]])    
     G = nx.DiGraph(data=A)
     print G.edges(data=True)
-<<<<<<< HEAD
     
     print(nx.dijkstra_path(G,source=0,target=30))
     print(nx.dijkstra_path_length(G,source=0,target=30))
@@ -208,6 +142,4 @@ if __name__ == "__main__":
     print(nx.dijkstra_path(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
     print(nx.dijkstra_path_length(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
 
-=======
->>>>>>> 7df1f560e0ca1efee0194715ca37bfdea22f0091
     '''
