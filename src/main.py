@@ -17,6 +17,7 @@ import numpy as np
 
 # Global parameters
 infinite = 999999
+shuttle_penalty = 300 # in seconds
 walking_time_filename = '../data/CampusMatrix - Walking Time.csv' # time in seconds
 shuttle_time_filename = '../data/CampusMatrix - Shuttle.csv' # time in seconds
 outdoorness_filename = '../data/CampusMatrix - Outdoorness.csv' # binary: 0 is indoor, 1 is outdoor
@@ -74,6 +75,15 @@ def compute_shortest_path(graph, target_node, source_node):
     print(nx.dijkstra_path(graph,source=source_node,target=target_node))
     print(nx.dijkstra_path_length(graph,source=source_node,target=target_node))
 
+def add_penalty(array2D, penalty):
+    '''
+    Replace NaN by infinite in a 2D array
+    '''
+    for (x,y), value in np.ndenumerate(array2D): 
+        if (array2D[x][y] <> 0) and (array2D[x][y] <> infinite):
+            array2D[x][y] += penalty   
+    return array2D
+
 def main():
     '''
     This is the main function
@@ -82,6 +92,7 @@ def main():
     walking_times = read_weights_from_file(walking_time_filename)  
     shuttle_times = read_weights_from_file(shuttle_time_filename)
     shuttle_connection_times = read_weights_from_file(shuttle_connection_time_filename)
+    shuttle_connection_times = add_penalty(shuttle_connection_times, shuttle_penalty/2) # /2 because we get in and out the shuttle, so we don't want to have a double penalty
     
     #print walking_times
     walking_graph = nx.DiGraph(data=walking_times)
@@ -95,6 +106,7 @@ def main():
     
     shuttle_connection_graph = nx.DiGraph(data=shuttle_connection_times)
     shuttle_connection_graph = nx.relabel_nodes(shuttle_connection_graph,convert_list_to_dict(read_node_labels(shuttle_connection_time_filename)))
+    # add shuttle penalty
     print 'shuttle_connection_graph', shuttle_connection_graph.edges(data=True)
     
     # Create main graph
@@ -106,6 +118,10 @@ def main():
     # Compute the shortest paths and path lengths between nodes in the graph.
     # http://networkx.lanl.gov/reference/algorithms.shortest_paths.html
     compute_shortest_path(main_graph, '32', 'NW86')
+    
+    # TODO: display travel time
+    # TODO: outdoorness
+    # TODO: enjoyability
     
 
 def display_path_labels(node_labels, path):
