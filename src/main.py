@@ -9,11 +9,19 @@ Installation instructions (Windows 7 SP1 x64, Python 2.7 x64):
  - Open a new Command Prompt
  - Run easy_install networkx-1.8.1-py2.7.egg
  
+ - Maybe install Python-igraph: http://www.lfd.uci.edu/~gohlke/pythonlibs/#python-igraph
+ 
 '''
-import sys
+# Main imports
+import sys 
 import networkx as nx
 import numpy as np
 #from scipy import stats
+
+# Imports for the YenKSP
+sys.path.append('../lib/YenKSP')
+from algorithms import *
+from graph import *
 
 # Global parameters
 infinite = 999999
@@ -113,6 +121,21 @@ def apply_outdoor_penalty(array2D, outdoor_array2D, penalty):
             array2D[x][y] *= (1 + penalty)
     return array2D
   
+def convert_nx_digraph_into_yenksp_digraph(nx_digraph):
+    '''
+    Converts a NetworkX graph into YenKSP digraph
+    '''
+    yenksp_digraph = DiGraph()
+    for node_label in nx_digraph.nodes():
+        yenksp_digraph.add_node(node_label)
+    for edge in nx_digraph.edges(data=True):
+        edge_start = edge[0]
+        edge_end = edge[1]
+        edge_weight = edge[2]['weight']
+        if edge_weight == infinite: continue
+        yenksp_digraph.add_edge(edge_start, edge_end, edge_weight )
+    return yenksp_digraph  
+  
 def main():
     '''
     This is the main function
@@ -157,9 +180,14 @@ def main():
     compute_shortest_path(main_graph, '50', '35')
     #print nx.dijkstra_predecessor_and_distance(main_graph, 'NW86')
     
+    # Compute shortest paths and lengths in a weighted graph G. TODO: Return farthest region.
+    print nx.single_source_dijkstra(main_graph, '32', 'NW86')
+    
+    # Compute KSP (k-shortest paths) using https://github.com/Pent00/YenKSP
+    yenksp_digraph = convert_nx_digraph_into_yenksp_digraph(main_graph)
+    print ksp_yen(yenksp_digraph, 'NW86', '32', 2)
     
     # If time permits: 
-    # TODO: k-best paths
     # TODO: enjoyability metric
     
 
