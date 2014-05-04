@@ -10,7 +10,7 @@ Installation instructions (Windows 7 SP1 x64, Python 2.7 x64):
  - Run easy_install networkx-1.8.1-py2.7.egg
  
 '''
-
+import sys
 import networkx as nx
 import numpy as np
 #from scipy import stats
@@ -18,6 +18,8 @@ import numpy as np
 # Global parameters
 infinite = 999999
 shuttle_penalty = 300 # in seconds
+outdoorness_penalty = 0.0 # 0 is no penalty. Positive means we want to avoid outdoor path; Negative means prefer outdoor path
+walking_penalty = 0.0 # 0 is no penalty. Positive means we want to avoid outdoor path; Negative means prefer outdoor path
 walking_time_filename = '../data/CampusMatrix - Walking Time.csv' # time in seconds
 shuttle_time_filename = '../data/CampusMatrix - Shuttle.csv' # time in seconds
 outdoorness_filename = '../data/CampusMatrix - Outdoorness.csv' # binary: 0 is indoor, 1 is outdoor
@@ -68,33 +70,67 @@ def read_weights_from_file(filename):
     data = replace_nan_to_infinite(delete_first_row_and_column(data))    
     return data
 
+def display_path_weights(graph, path):
+    '''
+    Display the weight of all the edges in a path
+    '''
+    print "Path's weight details: ",
+    for edge_number in range(len(path)-1):
+        edge = (path[edge_number], path[edge_number+1])
+        print graph.get_edge_data(*edge),
+    print '\n'
+
 def compute_shortest_path(graph, target_node, source_node):
     '''
-    
+    Display shortest path result
     '''
-    print(nx.dijkstra_path(graph,source=source_node,target=target_node))
-    print(nx.dijkstra_path_length(graph,source=source_node,target=target_node))
+    print '\n******* From ' + source_node + ' to ' + target_node + ' *******'
+    path = nx.dijkstra_path(graph,source=source_node,target=target_node)
+    print 'Path:', path
+    path_length = nx.dijkstra_path_length(graph,source=source_node,target=target_node)
+    print 'Path weight: ', path_length
+    display_path_weights(graph, path)
 
-def add_penalty(array2D, penalty):
+def apply_penalty(array2D, penalty, mode, flags = []):
     '''
-    Replace NaN by infinite in a 2D array
+    Apply penalty on some distance matrix
+    mode == 'add' means we are going to add a fixed penalty to every edge's weight.
+    mode == 'multiply' means we are going to multiply every edge's weight with fixed penalty.
     '''
     for (x,y), value in np.ndenumerate(array2D): 
         if (array2D[x][y] <> 0) and (array2D[x][y] <> infinite):
-            array2D[x][y] += penalty   
+            if mode == 'add': array2D[x][y] += penalty
+            elif mode == 'multiply': array2D[x][y] *= (penalty + 1.0)
+            else: print "In apply_penalty(), mode should be either 'add' or 'multiply'", sys.exc_info()[0]; raise
     return array2D
 
+def apply_outdoor_penalty(array2D, outdoor_array2D, penalty):
+    '''
+    Apply outdoor penalty. Since it needs to be implemented in a particular way, the function has been separated from apply_penalty
+    '''
+    for (x,y), value in np.ndenumerate(array2D): 
+        if (array2D[x][y] <> 0) and (array2D[x][y] <> infinite) and (outdoor_array2D[x][y] == 1):
+            array2D[x][y] *= (1 + penalty)
+    return array2D
+  
 def main():
     '''
     This is the main function
     http://networkx.lanl.gov/reference/algorithms.operators.html
     '''    
+    # Get distance matrices
     walking_times = read_weights_from_file(walking_time_filename)  
     shuttle_times = read_weights_from_file(shuttle_time_filename)
     shuttle_connection_times = read_weights_from_file(shuttle_connection_time_filename)
-    shuttle_connection_times = add_penalty(shuttle_connection_times, shuttle_penalty/2) # /2 because we get in and out the shuttle, so we don't want to have a double penalty
+    outdoorness_matrix = read_weights_from_file(outdoorness_filename)
+    #print outdoorness_matrix
     
-    #print walking_times
+    # Add penalties
+    shuttle_connection_times = apply_penalty(shuttle_connection_times, shuttle_penalty/2, 'add') # /2 because we get in and out the shuttle, so we don't want to have a double penalty
+    walking_times = apply_penalty(walking_times, walking_penalty , 'multiply') 
+    walking_times = apply_outdoor_penalty(walking_times, outdoorness_matrix, outdoorness_penalty)
+    
+    # Create subgraphs
     walking_graph = nx.DiGraph(data=walking_times)
     #print G.edges(data=True)
     walking_graph = nx.relabel_nodes(walking_graph,convert_list_to_dict(read_node_labels(walking_time_filename)))    
@@ -106,7 +142,6 @@ def main():
     
     shuttle_connection_graph = nx.DiGraph(data=shuttle_connection_times)
     shuttle_connection_graph = nx.relabel_nodes(shuttle_connection_graph,convert_list_to_dict(read_node_labels(shuttle_connection_time_filename)))
-    # add shuttle penalty
     print 'shuttle_connection_graph', shuttle_connection_graph.edges(data=True)
     
     # Create main graph
@@ -118,10 +153,14 @@ def main():
     # Compute the shortest paths and path lengths between nodes in the graph.
     # http://networkx.lanl.gov/reference/algorithms.shortest_paths.html
     compute_shortest_path(main_graph, '32', 'NW86')
+    compute_shortest_path(main_graph, 'W7', 'W20')
+    compute_shortest_path(main_graph, '50', '35')
+    #print nx.dijkstra_predecessor_and_distance(main_graph, 'NW86')
     
-    # TODO: display travel time
-    # TODO: outdoorness
-    # TODO: enjoyability
+    
+    # If time permits: 
+    # TODO: k-best paths
+    # TODO: enjoyability metric
     
 
 def display_path_labels(node_labels, path):
@@ -157,5 +196,14 @@ if __name__ == "__main__":
     print(display_path_labels(node_labels, nx.dijkstra_path(G,source=node_labels.index('NW12'),target=node_labels.index('NW86'))))
     print(nx.dijkstra_path(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
     print(nx.dijkstra_path_length(G,source=node_labels.index('NW12'),target=node_labels.index('NW86')))
+    
+    for (x,y), value in np.ndenumerate(array2D): 
+        custom_flag = 0 if len(flags) == 0 else flags[x][y]  
+        if (array2D[x][y] <> 0) and (array2D[x][y] <> infinite):
+            if mode == 'add': array2D[x][y] += penalty + custom_flag
+            elif mode == 'multiply': array2D[x][y] *= (penalty + 1.0)*custom_flag
+            else: print "In apply_penalty(), mode should be either 'add' or 'multiply'", sys.exc_info()[0]; raise
+    return array2D
+
 
     '''
